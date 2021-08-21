@@ -5,6 +5,8 @@ const https = require('https')
 
 require('dotenv').config();
 
+const LOCK_ID = process.env.LOCK_ID
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
@@ -89,9 +91,29 @@ app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
   const html = `<!DOCTYPE html>
 <html>
+<style>
+.btn {
+  display:block;
+  width:800px;
+  height:800px;
+  line-height:80%;
+  border: 2px solid #f5f5f5;
+  border-radius: 50%;
+  color:#f5f5f5;
+  text-align:center;
+  text-decoration:none;
+  background: #555777;
+  box-shadow: 0 0 3px gray;
+  font-size:150px;
+  font-weight:bold;
+}
+.btn:hover {
+    background: #ff0000;
+}
+</style>
 <body>
     <form action="${inviteUrl(inviteToken)}" method="post">
-        <input type="submit" value="Unlock" />
+      <button class='btn' type="submit">Unlock</button>
     </form>
 </body>
 </html>
@@ -120,6 +142,7 @@ app.post('/welcome/:inviteToken', function (req, res) {
 
   recordEntry(inviteToken)
   sendTelegram(entryMessage(inviteToken))
+  august.unlock({ lockID: LOCK_ID })
   res.send(`Welcome ${tokenData.metadata.guestName}`)
 })
 
