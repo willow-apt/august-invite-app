@@ -68,7 +68,7 @@ function entryMessage(inviteToken) {
 }
 
 function knockMessage(inviteToken) {
-  return `Someone's at the door! Click on ${BASE_PATH}/welcome/${inviteToken} to let them in.`
+  return `Someone's at the door! Click on ${inviteUrl(inviteToken)} to let them in.`
 }
 
 function recordEntry(inviteToken) {
@@ -79,11 +79,14 @@ app.get('/invites', function(_req, res) {
   res.send(tokens)
 })
 
+function inviteUrl(token) {
+  return `${BASE_PATH}/welcome/${token}`
+}
 app.get('/invite/:guestName/:maxEntries', function (req, res) {
   const guestName = req.params.guestName
   const maxEntries = req.params.maxEntries
   const token = createGuestKey(maxEntries, { guestName })
-  res.send(token)
+  res.send(inviteUrl(token))
 })
 
 app.get('/welcome/:inviteToken', function (req, res) {
@@ -91,7 +94,7 @@ app.get('/welcome/:inviteToken', function (req, res) {
   const html = `<!DOCTYPE html>
 <html>
 <body>
-    <form action="${BASE_PATH}/welcome/${inviteToken}" method="post">
+    <form action="${inviteUrl(inviteToken)}" method="post">
         <input type="submit" value="Unlock" />
     </form>
 </body>
