@@ -71,6 +71,14 @@ function knockMessage(inviteToken) {
   return `Someone's at the door! Click on ${inviteUrl(inviteToken)} to let them in.`
 }
 
+function inviteMessage(inviteToken) {
+  const invite = tokens[inviteToken]
+  return `Here's the invite link for ${invite.metadata.guestName}:
+${inviteUrl(inviteToken)}
+They are permitted a maximum of ${invite.maxEntries} entries.
+The link expires ${invite.expiration}.`
+}
+
 function recordEntry(inviteToken) {
   tokens[inviteToken].maxEntries--
 }
@@ -83,12 +91,13 @@ function inviteUrl(token) {
   return `${BASE_PATH}/welcome/${token}`
 }
 
-// app.get('/invite/:guestName/:maxEntries', function (req, res) {
-//   const guestName = req.params.guestName
-//   const maxEntries = req.params.maxEntries
-//   const token = createGuestKey(maxEntries, { guestName })
-//   res.send(inviteUrl(token))
-// })
+app.get('/invite/:guestName/:maxEntries', function (req, res) {
+  const guestName = req.params.guestName
+  const maxEntries = req.params.maxEntries
+  const token = createGuestKey(maxEntries, { guestName })
+  sendTelegram(inviteMessage(token))
+  res.send('invite requested')
+})
 
 app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
