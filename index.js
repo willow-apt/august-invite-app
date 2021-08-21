@@ -82,12 +82,13 @@ app.get('/invites', function(_req, res) {
 function inviteUrl(token) {
   return `${BASE_PATH}/welcome/${token}`
 }
-app.get('/invite/:guestName/:maxEntries', function (req, res) {
-  const guestName = req.params.guestName
-  const maxEntries = req.params.maxEntries
-  const token = createGuestKey(maxEntries, { guestName })
-  res.send(inviteUrl(token))
-})
+
+// app.get('/invite/:guestName/:maxEntries', function (req, res) {
+//   const guestName = req.params.guestName
+//   const maxEntries = req.params.maxEntries
+//   const token = createGuestKey(maxEntries, { guestName })
+//   res.send(inviteUrl(token))
+// })
 
 app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
@@ -145,7 +146,7 @@ app.get('/knock', function (_req, res) {
 app.post('/knock', function (_req, res) {
   const token = createGuestKey(1, { guestName: 'stranger' })
   sendTelegram(knockMessage(token))
-  res.send('knocked')
+  res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
 
 app.listen(process.env.PORT || 3000)
