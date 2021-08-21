@@ -17,21 +17,12 @@ const app = express()
 
 let invites = {}
 
-function createExpiration() {
-  let expiration = new Date()
-  expiration.setFullYear(2030)
-  return expiration
-}
-
 function createGuestKey(maxEntries, metadata) {
   const token = uuidv4()
+  let expiration = new Date()
+  expiration.setFullYear(2030)
 
-  invites[token] = {
-    expiration: createExpiration(),
-    maxEntries,
-    metadata,
-  }
-
+  invites[token] = { expiration, maxEntries, metadata }
   return token
 }
 
@@ -61,10 +52,7 @@ function sendTelegram(message) {
 }
 
 function entryMessage(inviteToken) {
-  const guestName = invites[inviteToken].metadata.guestName
-  const message = `${guestName} has entered!`
-  console.log(message)
-  return message
+  return `${invites[inviteToken].metadata.guestName} has entered!`
 }
 
 function knockMessage(inviteToken) {
@@ -72,11 +60,13 @@ function knockMessage(inviteToken) {
 }
 
 function inviteMessage(inviteToken) {
-  const invite = invites[inviteToken]
-  return `Here's the invite link for ${invite.metadata.guestName}:
+  const { maxEntries, expiration, metadata } = invites[inviteToken]
+  const { guestName } = metadata
+
+  return `Here's the invite link for ${guestName}:
 ${inviteUrl(inviteToken)}
-They are permitted a maximum of ${invite.maxEntries} entries.
-The link expires ${invite.expiration}.`
+They are permitted a maximum of ${maxEntries} entries.
+The link expires ${expiration}.`
 }
 
 function recordEntry(inviteToken) {
