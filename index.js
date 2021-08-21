@@ -15,7 +15,7 @@ const BASE_PATH = DOMAIN === 'localhost' ? `${SCHEME}://localhost:${PORT}` : `${
 
 const app = express()
 
-let tokens = {}
+let invites = {}
 
 function createExpiration() {
   let expiration = new Date()
@@ -26,7 +26,7 @@ function createExpiration() {
 function createGuestKey(maxEntries, metadata) {
   const token = uuidv4()
 
-  tokens[token] = {
+  invites[token] = {
     expiration: createExpiration(),
     maxEntries,
     metadata,
@@ -61,7 +61,7 @@ function sendTelegram(message) {
 }
 
 function entryMessage(inviteToken) {
-  const guestName = tokens[inviteToken].metadata.guestName
+  const guestName = invites[inviteToken].metadata.guestName
   const message = `${guestName} has entered!`
   console.log(message)
   return message
@@ -72,7 +72,7 @@ function knockMessage(inviteToken) {
 }
 
 function inviteMessage(inviteToken) {
-  const invite = tokens[inviteToken]
+  const invite = invites[inviteToken]
   return `Here's the invite link for ${invite.metadata.guestName}:
 ${inviteUrl(inviteToken)}
 They are permitted a maximum of ${invite.maxEntries} entries.
@@ -80,12 +80,8 @@ The link expires ${invite.expiration}.`
 }
 
 function recordEntry(inviteToken) {
-  tokens[inviteToken].maxEntries--
+  invites[inviteToken].maxEntries--
 }
-
-app.get('/invites', function(_req, res) {
-  res.send(tokens)
-})
 
 function inviteUrl(token) {
   return `${BASE_PATH}/welcome/${token}`
@@ -115,14 +111,14 @@ app.get('/welcome/:inviteToken', function (req, res) {
 
 app.post('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
-  const maybeToken = tokens[inviteToken]
+  const maybeToken = invites[inviteToken]
 
   if (!maybeToken) {
     res.send('no')
     return
   }
 
-  const tokenData = tokens[inviteToken]
+  const tokenData = invites[inviteToken]
   if (tokenData.expiration < new Date()) {
     res.send('expired')
     return
