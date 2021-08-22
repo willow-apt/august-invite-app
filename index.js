@@ -91,6 +91,38 @@ async function recordEntry(inviteToken, invite) {
   await saveInvite(inviteToken, invite)
 }
 
+async function getActiveInvites() {
+  const query = datastore
+    .createQuery('Invite')
+    .filter('maxEntries', '>', 0)
+
+  // For "performance reasons", datastore doesn't allow
+  // inequality filtering on more than one property
+  // so we do it in here
+  const results = (await datastore.runQuery(query))[0]
+  const now = new Date()
+  return results.filter(invite => invite.expiration > now)
+}
+
+function activeInvitesMessage(invites) {
+  return `The active invites are:
+${
+invites.map(invite => {
+  return `${invite.guestName}
+--------------------
+Remaining Entries: ${invite.maxEntries}
+Expiration: ${invite.expiration}
+`
+}).join('\n')
+}
+`
+}
+
+app.get('/active_invites', async function (_req, res) {
+  sendTelegram(activeInvitesMessage(await getActiveInvites()))
+  res.send('reported active invites')
+})
+
 app.get('/invite/:guestName/:maxEntries', async function (req, res) {
   const guestName = req.params.guestName
   const maxEntries = req.params.maxEntries
