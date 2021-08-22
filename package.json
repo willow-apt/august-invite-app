@@ -7,14 +7,18 @@
     "telegraf": "^4.4.1",
     "uuid": "^8.3.2"
   },
-  "name": "jjd-lock",
-  "version": "1.0.0",
+  "name": "august-invite-app",
+  "version": "1.1.0",
   "description": "Access control for august locks",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node ./dist/index.js",
+    "gcp-build": "tsc -p ."
   },
   "author": "Daniel Goldstein",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/uuid": "^8.3.1"
+  }
 }

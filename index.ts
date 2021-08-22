@@ -1,9 +1,10 @@
-const august = require('august-connect')
-const express = require('express')
-const { v4: uuidv4 } = require('uuid')
-const https = require('https')
-const { Datastore } = require('@google-cloud/datastore')
-const { Telegraf } = require('telegraf')
+import august from 'august-connect'
+import express from 'express'
+import { v4 as uuidv4 } from 'uuid'
+import https from 'https'
+import { Datastore } from '@google-cloud/datastore'
+import { Telegraf } from 'telegraf'
+import { Invite } from './contracts'
 
 require('dotenv').config();
 
@@ -12,22 +13,28 @@ const LOCK_ID = process.env.LOCK_ID
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
+if (TELEGRAM_BOT_TOKEN === undefined || TELEGRAM_CHAT_ID === undefined) {
+  console.error(`Missing telegram secrets. Exiting.`);
+  process.exit(1);
+}
+
 const DOMAIN = process.env.DOMAIN || 'localhost'
 const PORT = process.env.PORT || 3000
-const SCHEME = DOMAIN === 'localhost' ? 'http' : 'https'
-const BASE_PATH = DOMAIN === 'localhost' ? `${SCHEME}://localhost:${PORT}` : `${SCHEME}://${DOMAIN}`
+const PROTOCOL = process.env.PROTOCOL || 'http'
+const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `${PROTOCOL}://${DOMAIN}`
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
 const datastore = new Datastore()
 const app = express()
 
-async function saveInvite(inviteToken, invite) {
+async function saveInvite(inviteToken: string, invite: Invite) {
   const key = datastore.key(['Invite', inviteToken])
   await datastore.save({ key, data: invite })
 }
 
-async function createInvite(maxEntries, guestName) {
+async function createInvite(maxEntries: number, guestName: string) {
   const token = uuidv4()
+
   let expiration = new Date()
   expiration.setFullYear(2030)
 
@@ -36,12 +43,12 @@ async function createInvite(maxEntries, guestName) {
   return { token, invite }
 }
 
-async function getInvite(inviteToken) {
+async function getInvite(inviteToken: string) {
   const entities = await datastore.get(datastore.key(['Invite', inviteToken]))
   return entities[0]
 }
 
-function sendTelegram(message) {
+function sendTelegram(message: string) {
   const data = JSON.stringify({
     chat_id: TELEGRAM_CHAT_ID,
     text: message
@@ -66,19 +73,19 @@ function sendTelegram(message) {
   req.end()
 }
 
-function entryMessage(invite) {
+function entryMessage(invite: Invite) {
   return `${invite.guestName} has entered!`
 }
 
-function inviteUrl(token) {
+function inviteUrl(token: string) {
   return `${BASE_PATH}/welcome/${token}`
 }
 
-function knockMessage(inviteToken) {
+function knockMessage(inviteToken: string) {
   return `Someone's at the door! Click on ${inviteUrl(inviteToken)} to let them in.`
 }
 
-function inviteMessage(inviteToken, invite) {
+function inviteMessage(inviteToken: string, invite: Invite) {
   const { maxEntries, expiration, guestName } = invite
 
   return `Here's the invite link for ${guestName}:
@@ -87,7 +94,7 @@ They are permitted a maximum of ${maxEntries} entries.
 The link expires ${expiration}.`
 }
 
-async function recordEntry(inviteToken, invite) {
+async function recordEntry(inviteToken: string, invite: Invite) {
   invite.maxEntries--
   console.log(`Invite for token ${inviteToken}: ${invite}`)
   await saveInvite(inviteToken, invite)
@@ -106,7 +113,7 @@ async function getActiveInvites() {
   return results.filter(invite => invite.expiration > now)
 }
 
-function activeInvitesMessage(invites) {
+function activeInvitesMessage(invites: any[]) { // FIX MY TYPE
   if (invites.length == 0) {
     return 'No active invites. Get more friends!'
   }
@@ -116,7 +123,7 @@ ${
 invites.map(invite => {
   return `${invite.guestName}
 --------------------
-GUID: ${invite[datastore.KEY].name.substring(0, 5)}-XXXXX
+GUID: ${invite[datastore.KEY].name.substring(0, 5)}
 Remaining Entries: ${invite.maxEntries}
 Expiration: ${invite.expiration}
 `
@@ -211,8 +218,8 @@ bot.command('/active_invites', async (ctx) => {
 bot.command('invite', async (ctx) => {
   try {
     let [guestName, maxEntries] = ctx.update.message.text.split(' ').slice(1)
-    maxEntries = parseInt(maxEntries)
-    const { token, invite } = await createInvite(maxEntries, guestName)
+    const maxEntriesInt = parseInt(maxEntries)
+    const { token, invite } = await createInvite(maxEntriesInt, guestName)
     ctx.reply(inviteMessage(token, invite))
   } catch (error) {
     ctx.reply(`Bad invite params: ${error}`)
