@@ -105,11 +105,16 @@ async function getActiveInvites() {
 }
 
 function activeInvitesMessage(invites) {
+  if (invites.length == 0) {
+    return 'No active invites. Get more friends!'
+  }
+
   return `The active invites are:
 ${
 invites.map(invite => {
   return `${invite.guestName}
 --------------------
+GUID: ${invite[datastore.KEY].name.substring(0, 5)}-XXXXX
 Remaining Entries: ${invite.maxEntries}
 Expiration: ${invite.expiration}
 `
