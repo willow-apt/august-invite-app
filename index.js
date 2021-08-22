@@ -2,6 +2,7 @@ const august = require('august-connect')
 const express = require('express')
 const { v4: uuidv4 } = require('uuid')
 const https = require('https')
+const { Datastore } = require('@google-cloud/datastore')
 
 require('dotenv').config();
 
@@ -15,17 +16,27 @@ const PORT = process.env.PORT || 3000
 const SCHEME = DOMAIN === 'localhost' ? 'http' : 'https'
 const BASE_PATH = DOMAIN === 'localhost' ? `${SCHEME}://localhost:${PORT}` : `${SCHEME}://${DOMAIN}`
 
+const datastore = new Datastore()
 const app = express()
 
-let invites = {}
+async function saveInvite(inviteToken, invite) {
+  const key = datastore.key(['Invite', inviteToken])
+  await datastore.save({ key, data: invite })
+}
 
-function createGuestKey(maxEntries, metadata) {
+async function createInvite(maxEntries, guestName) {
   const token = uuidv4()
   let expiration = new Date()
   expiration.setFullYear(2030)
 
-  invites[token] = { expiration, maxEntries, metadata }
-  return token
+  const invite = { expiration, maxEntries, guestName }
+  await saveInvite(token, invite)
+  return { token, invite }
+}
+
+async function getInvite(inviteToken) {
+  const entities = await datastore.get(datastore.key(['Invite', inviteToken]))
+  return entities[0]
 }
 
 function sendTelegram(message) {
@@ -53,17 +64,20 @@ function sendTelegram(message) {
   req.end()
 }
 
-function entryMessage(inviteToken) {
-  return `${invites[inviteToken].metadata.guestName} has entered!`
+function entryMessage(invite) {
+  return `${invite.guestName} has entered!`
+}
+
+function inviteUrl(token) {
+  return `${BASE_PATH}/welcome/${token}`
 }
 
 function knockMessage(inviteToken) {
   return `Someone's at the door! Click on ${inviteUrl(inviteToken)} to let them in.`
 }
 
-function inviteMessage(inviteToken) {
-  const { maxEntries, expiration, metadata } = invites[inviteToken]
-  const { guestName } = metadata
+function inviteMessage(inviteToken, invite) {
+  const { maxEntries, expiration, guestName } = invite
 
   return `Here's the invite link for ${guestName}:
 ${inviteUrl(inviteToken)}
@@ -71,19 +85,17 @@ They are permitted a maximum of ${maxEntries} entries.
 The link expires ${expiration}.`
 }
 
-function recordEntry(inviteToken) {
-  invites[inviteToken].maxEntries--
+async function recordEntry(inviteToken, invite) {
+  invite.maxEntries--
+  console.log(`Invite for token ${inviteToken}: ${invite}`)
+  await saveInvite(inviteToken, invite)
 }
 
-function inviteUrl(token) {
-  return `${BASE_PATH}/welcome/${token}`
-}
-
-app.get('/invite/:guestName/:maxEntries', function (req, res) {
+app.get('/invite/:guestName/:maxEntries', async function (req, res) {
   const guestName = req.params.guestName
   const maxEntries = req.params.maxEntries
-  const token = createGuestKey(maxEntries, { guestName })
-  sendTelegram(inviteMessage(token))
+  const { token, invite } = await createInvite(maxEntries, guestName)
+  sendTelegram(inviteMessage(token, invite))
   res.send('invite requested')
 })
 
@@ -121,29 +133,28 @@ app.get('/welcome/:inviteToken', function (req, res) {
   res.send(html)
 })
 
-app.post('/welcome/:inviteToken', function (req, res) {
+app.post('/welcome/:inviteToken', async function (req, res) {
   const inviteToken = req.params.inviteToken
-  const maybeToken = invites[inviteToken]
+  const invite = await getInvite(inviteToken)
 
-  if (!maybeToken) {
+  if (!invite) {
     res.send('no')
     return
   }
 
-  const tokenData = invites[inviteToken]
-  if (tokenData.expiration < new Date()) {
+  if (invite.expiration < new Date()) {
     res.send('expired')
     return
   }
-  if (tokenData.maxEntries == 0) {
+  if (invite.maxEntries == 0) {
     res.send('used up all entries')
     return
   }
 
-  recordEntry(inviteToken)
-  sendTelegram(entryMessage(inviteToken))
+  await recordEntry(inviteToken, invite)
+  sendTelegram(entryMessage(invite))
   august.unlock({ lockID: LOCK_ID })
-  res.send(`Welcome ${tokenData.metadata.guestName}`)
+  res.send(`Welcome ${invite.guestName}`)
 })
 
 app.get('/knock', function (_req, res) {
@@ -161,8 +172,8 @@ app.get('/knock', function (_req, res) {
   res.send(html)
 })
 
-app.post('/knock', function (_req, res) {
-  const token = createGuestKey(1, { guestName: 'stranger' })
+app.post('/knock', async function (_req, res) {
+  const { token } = await createInvite(1, 'stranger')
   sendTelegram(knockMessage(token))
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
