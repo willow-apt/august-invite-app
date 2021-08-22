@@ -77,8 +77,8 @@ function entryMessage(invite: Invite) {
   return `${invite.guestName} has entered!`
 }
 
-function inviteUrl(token: string) {
-  return `${BASE_PATH}/welcome/${token}`
+function inviteUrl(token: string, basePath: string = BASE_PATH) {
+  return `${basePath}/welcome/${token}`
 }
 
 function knockMessage(inviteToken: string) {
@@ -134,6 +134,7 @@ Expiration: ${invite.expiration}
 
 app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
+  const host = req.headers.host
   const html = `<!DOCTYPE html>
 <html>
 <style>
