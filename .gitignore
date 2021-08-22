@@ -1,6 +1,9 @@
 .gcloudignore
 .env
+.env*
+!.env.template
 node_modules/
+app.yaml
 app.yaml*
 !app.yaml.template
 /dist

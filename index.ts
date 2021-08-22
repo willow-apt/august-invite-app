@@ -1,6 +1,6 @@
 import august from 'august-connect'
 import express from 'express'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4,  validate as uuidValidate } from 'uuid'
 import https from 'https'
 import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
@@ -134,6 +134,12 @@ Expiration: ${invite.expiration}
 
 app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
+
+  if (!uuidValidate(inviteToken)) {
+    res.send("no thank you")
+    return
+  }
+
   const host = req.headers.host
   const html = `<!DOCTYPE html>
 <html>
@@ -169,6 +175,12 @@ app.get('/welcome/:inviteToken', function (req, res) {
 
 app.post('/welcome/:inviteToken', async function (req, res) {
   const inviteToken = req.params.inviteToken
+
+  if (!uuidValidate(inviteToken)) {
+    res.send("no thank you")
+    return
+  }
+
   const invite = await getInvite(inviteToken)
 
   if (!invite) {
