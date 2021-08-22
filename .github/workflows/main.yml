@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches: main
+
+jobs:
+  deploy_to_google_cloud:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - id: generate_dotenv_file
+      env:
+        MY_DOTENV: ${{ secrets.ENV_FILE }}
+      run: echo "$MY_DOTENV" > .env-for-app-yaml
+
+    - id: prepare-app-yaml
+      uses: mshick/fast-envsubst@v1
+      with:
+        env-file: .env-for-app-yaml
+        in-file: app.yaml.template
+        out-file: app.yaml
+
+    - id: deploy
+      uses: google-github-actions/deploy-appengine@main
+      with:
+        credentials: ${{ secrets.GCP_CREDS }}
+        deliverables: app.yaml
