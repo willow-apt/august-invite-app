@@ -3,6 +3,7 @@ const express = require('express')
 const { v4: uuidv4 } = require('uuid')
 const https = require('https')
 const { Datastore } = require('@google-cloud/datastore')
+const { Telegraf } = require('telegraf')
 
 require('dotenv').config();
 
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 3000
 const SCHEME = DOMAIN === 'localhost' ? 'http' : 'https'
 const BASE_PATH = DOMAIN === 'localhost' ? `${SCHEME}://localhost:${PORT}` : `${SCHEME}://${DOMAIN}`
 
+const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
 const datastore = new Datastore()
 const app = express()
 
@@ -123,19 +125,6 @@ Expiration: ${invite.expiration}
 `
 }
 
-app.get('/active_invites', async function (_req, res) {
-  sendTelegram(activeInvitesMessage(await getActiveInvites()))
-  res.send('reported active invites')
-})
-
-app.get('/invite/:guestName/:maxEntries', async function (req, res) {
-  const guestName = req.params.guestName
-  const maxEntries = req.params.maxEntries
-  const { token, invite } = await createInvite(maxEntries, guestName)
-  sendTelegram(inviteMessage(token, invite))
-  res.send('invite requested')
-})
-
 app.get('/welcome/:inviteToken', function (req, res) {
   const inviteToken = req.params.inviteToken
   const html = `<!DOCTYPE html>
@@ -214,5 +203,24 @@ app.post('/knock', async function (_req, res) {
   sendTelegram(knockMessage(token))
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
+
+bot.command('/active_invites', async (ctx) => {
+  ctx.reply(activeInvitesMessage(await getActiveInvites()))
+})
+
+bot.command('invite', async (ctx) => {
+  try {
+    let [guestName, maxEntries] = ctx.update.message.text.split(' ').slice(1)
+    maxEntries = parseInt(maxEntries)
+    const { token, invite } = await createInvite(maxEntries, guestName)
+    ctx.reply(inviteMessage(token, invite))
+  } catch (error) {
+    ctx.reply(`Bad invite params: ${error}`)
+  }
+})
+
+bot.launch()
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 app.listen(PORT)
