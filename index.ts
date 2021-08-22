@@ -113,7 +113,7 @@ async function getActiveInvites() {
   return results.filter(invite => invite.expiration > now)
 }
 
-function activeInvitesMessage(invites: Invite[]) {
+function activeInvitesMessage(invites: any[]) { // FIX MY TYPE
   if (invites.length == 0) {
     return 'No active invites. Get more friends!'
   }
