@@ -4,6 +4,7 @@
     "august-connect": "^3.0.0",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "telegraf": "^4.4.1",
     "uuid": "^8.3.2"
   },
   "name": "jjd-lock",
