@@ -215,4 +215,4 @@ app.post('/knock', async function (_req, res) {
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
 
-app.listen(process.env.PORT || 3000)
+app.listen(PORT)
