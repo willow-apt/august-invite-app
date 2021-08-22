@@ -13,8 +13,8 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 const DOMAIN = process.env.DOMAIN || 'localhost'
 const PORT = process.env.PORT || 3000
-const SCHEME = DOMAIN === 'localhost' ? 'http' : 'https'
-const BASE_PATH = DOMAIN === 'localhost' ? `${SCHEME}://localhost:${PORT}` : `${SCHEME}://${DOMAIN}`
+const PROTOCOL = process.env.PROTOCOL || 'http'
+const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `${PROTOCOL}://${DOMAIN}`
 
 const datastore = new Datastore()
 const app = express()

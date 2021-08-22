@@ -1,0 +1,14 @@
+runtime: nodejs16
+
+env_variables:
+  TELEGRAM_BOT_TOKEN: ""
+  TELEGRAM_CHAT_ID: ""
+  DOMAIN: ""
+  PROTOCOL: ""
+  AUGUST_API_KEY: ""
+  AUGUST_INSTALLID: ""
+  AUGUST_PASSWORD: ""
+  AUGUST_ID_TYPE: ""
+  AUGUST_ID: ""
+  LOCK_ID: ""
+
