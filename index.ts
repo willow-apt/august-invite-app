@@ -1,8 +1,8 @@
-const august = require('august-connect')
-const express = require('express')
-const { v4: uuidv4 } = require('uuid')
-const https = require('https')
-const { Datastore } = require('@google-cloud/datastore')
+import august from 'august-connect'
+import express from 'express'
+import { v4 as uuidv4 } from 'uuid'
+import https from 'https'
+import { Datastore } from '@google-cloud/datastore'
 
 require('dotenv').config();
 
@@ -19,7 +19,7 @@ const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `
 const datastore = new Datastore()
 const app = express()
 
-async function saveInvite(inviteToken, invite) {
+async function saveInvite(inviteToken: string, invite) {
   const key = datastore.key(['Invite', inviteToken])
   await datastore.save({ key, data: invite })
 }
