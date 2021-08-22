@@ -4,7 +4,7 @@ One time invite links for your visitors.  Built for an August Smart Lock (Gen 4 
 
 ## Usage
 
-Create your own `.env` file in the root of this repo, following the [`.env.template` example](https://github.com/willow-apt/august-invite-app/blob/main/.env.template)
+Create your own `.env` file in the root of this repo, following the [`.env.template` example](https://github.com/willow-apt/august-invite-app/blob/main/.env.template) and host somewhere in the cloud.
 
 Generate invites in Telegram
 
