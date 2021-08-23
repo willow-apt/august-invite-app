@@ -7,6 +7,7 @@ import https from 'https'
 import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
 import { Invite } from './contracts'
+import moment from 'moment';
 
 require('dotenv').config();
 
@@ -34,11 +35,13 @@ async function saveInvite(inviteToken: string, invite: Invite) {
   await datastore.save({ key, data: invite })
 }
 
-async function createInvite(maxEntries: number, guestName: string) {
+async function createInvite(maxEntries: number, guestName: string, expiration: Date | undefined = undefined) {
   const token = uuidv4()
 
-  let expiration = new Date()
-  expiration.setFullYear(2030)
+  if (expiration === undefined) {
+    expiration = new Date()
+    expiration = moment(expiration).add(30, 'hours').toDate()
+  }
 
   const invite = { expiration, maxEntries, guestName }
   await saveInvite(token, invite)
@@ -93,7 +96,7 @@ function inviteMessage(inviteToken: string, invite: Invite) {
   return `Here's the invite link for ${guestName}:
 ${inviteUrl(inviteToken)}
 They are permitted a maximum of ${maxEntries} entries.
-The link expires ${expiration}.`
+The link expires ${formatDate(expiration)}.`
 }
 
 async function recordEntry(inviteToken: string, invite: Invite) {
@@ -127,10 +130,30 @@ invites.map(invite => {
 --------------------
 GUID: ${invite[datastore.KEY].name.substring(0, 5)}
 Remaining Entries: ${invite.maxEntries}
-Expiration: ${invite.expiration}
+Expiration: ${formatDate(invite.expiration)}
 `
 }).join('\n')
 }
+`
+}
+
+function formatDate(date: Date) {
+  return moment(date).format('ddd, MMM Do YYYY, h:mm:ss a"')
+}
+
+function helpMessage() {
+  return `
+== Willow Bot ==
+
+Commands:
+*  /invite  <guest name>  <# of entries>
+*  /active_invites
+  
+
+Endpoints:
+*  ${BASE_PATH}/knock
+*  ${BASE_PATH}/welcome/:inviteId
+  
 `
 }
 
@@ -221,7 +244,7 @@ app.get('/knock', function (_req, res) {
 })
 
 app.post('/knock', async function (_req, res) {
-  const { token } = await createInvite(1, 'stranger')
+  const { token } = await createInvite(1, 'Anonymous Knocker')
   sendTelegram(knockMessage(token))
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
@@ -239,6 +262,10 @@ bot.command('invite', async (ctx) => {
   } catch (error) {
     ctx.reply(`Bad invite params: ${error}`)
   }
+})
+
+bot.command('help', async (ctx) => {
+  ctx.reply(helpMessage())
 })
 
 bot.launch()
