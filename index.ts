@@ -138,7 +138,7 @@ Expiration: ${formatDate(invite.expiration)}
 }
 
 function formatDate(date: Date) {
-  return moment(date).format('ddd, MMM Do YYYY, h:mm:ss a"')
+  return moment(date).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
 }
 
 function helpMessage() {
@@ -165,7 +165,6 @@ app.get('/welcome/:inviteToken', function (req, res) {
     return
   }
 
-  const host = req.headers.host
   const html = `<!DOCTYPE html>
 <html>
 <style>
