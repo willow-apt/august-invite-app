@@ -138,7 +138,7 @@ Expiration: ${formatDate(invite.expiration)}
 }
 
 function formatDate(date: Date) {
-  return moment(date.toLocaleDateString()).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
+  return moment(date.toLocaleString()).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
 }
 
 function helpMessage() {
