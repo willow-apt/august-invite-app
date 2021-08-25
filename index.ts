@@ -138,7 +138,7 @@ Expiration: ${formatDate(invite.expiration)}
 }
 
 function formatDate(date: Date) {
-  return moment(date).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
+  return moment(date.toLocaleDateString()).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
 }
 
 function helpMessage() {
@@ -187,6 +187,9 @@ app.get('/welcome/:inviteToken', function (req, res) {
     background: #ff0000;
 }
 </style>
+<head>
+  <title>Your Invite to Willow</title>
+</head>
 <body>
     <form action="${inviteUrl(inviteToken)}" method="post">
       <button class='btn' type="submit">Unlock</button>
