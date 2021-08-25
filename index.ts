@@ -7,8 +7,7 @@ import https from 'https'
 import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
 import { Invite } from './contracts'
-import moment from 'moment';
-import { tz } from 'moment-timezone'
+import moment from 'moment-timezone'
 
 require('dotenv').config();
 
@@ -228,7 +227,7 @@ app.post('/welcome/:inviteToken', async function (req, res) {
   await recordEntry(inviteToken, invite)
   sendTelegram(entryMessage(invite))
   august.unlock({ lockID: LOCK_ID })
-  res.send(`Welcome ${invite.guestName}`)
+  res.send(`Welcome!`)
 })
 
 app.get('/knock', function (_req, res) {
