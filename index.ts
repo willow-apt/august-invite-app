@@ -9,6 +9,7 @@ import { Telegraf } from 'telegraf'
 import { Invite } from './contracts'
 import moment from 'moment-timezone'
 
+
 require('dotenv').config();
 
 const LOCK_ID = process.env.LOCK_ID
@@ -29,6 +30,8 @@ const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
 const datastore = new Datastore()
 const app = express()
+
+app.use('/static', express.static('public'))
 
 async function saveInvite(inviteToken: string, invite: Invite) {
   const key = datastore.key(['Invite', inviteToken])
@@ -189,6 +192,8 @@ app.get('/welcome/:inviteToken', function (req, res) {
 </style>
 <head>
   <title>Your Invite to Willow</title>
+  <meta property="og:title" content="Your Invite to Willow" />
+  <meta property="og:image" content="${BASE_PATH}/static/bird_cake.png" />
 </head>
 <body>
     <form action="${inviteUrl(inviteToken)}" method="post">

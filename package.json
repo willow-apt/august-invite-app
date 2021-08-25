@@ -15,7 +15,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "node ./dist/index.js",
-    "gcp-build": "tsc -p ."
+    "gcp-build": "tsc -p .",
+    "dev": "tsc -p . && node ./dist/index.js"
   },
   "author": "Daniel Goldstein",
   "license": "MIT",
