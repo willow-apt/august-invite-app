@@ -8,6 +8,7 @@ import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
 import { Invite } from './contracts'
 import moment from 'moment';
+import { tz } from 'moment-timezone'
 
 require('dotenv').config();
 
@@ -137,8 +138,8 @@ Expiration: ${formatDate(invite.expiration)}
 `
 }
 
-function formatDate(date: Date) {
-  return moment(date.toLocaleString()).format('ddd, MMM Do YYYY, h:mm:ss a ZZ')
+function formatDate(date: Date): string {
+  return moment(date).tz('America/New_York').format('ddd, MMM Do YYYY, h:mm:ss A z')
 }
 
 function helpMessage() {
