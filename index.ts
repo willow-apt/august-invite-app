@@ -33,6 +33,11 @@ const app = express()
 
 app.use('/static', express.static('public'))
 
+app.get('/robots.txt', function (req, res) {
+  res.type('text/plain');
+  res.send("User-agent: *\nDisallow: /");
+});
+
 async function saveInvite(inviteToken: string, invite: Invite) {
   const key = datastore.key(['Invite', inviteToken])
   await datastore.save({ key, data: invite })
