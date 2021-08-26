@@ -267,12 +267,30 @@ bot.command('invite', async (ctx) => {
     const { token, invite } = await createInvite(maxEntriesInt, guestName)
     ctx.reply(inviteMessage(token, invite))
   } catch (error) {
-    ctx.reply(`Bad invite params: ${error}`)
+    ctx.reply(`Error processing invite: ${error}`)
   }
 })
 
 bot.command('help', async (ctx) => {
   ctx.reply(helpMessage())
+})
+
+bot.command('delete', async (ctx) => {
+  try {
+    const patterns = ctx.update.message.text.split(' ').slice(1)
+    const regexs = patterns.map(p => new RegExp(p))
+    const query = datastore.createQuery('Invite').select('__key__')
+    const allKeys = (await datastore.runQuery(query))[0].map(res => res[datastore.KEY])
+    const matches = allKeys.filter(k => regexs.some(r => r.test(k.name)))
+    if (matches.length === 0) {
+      ctx.reply('No matching invites found')
+    } else {
+      await datastore.delete(matches)
+      ctx.reply(`Deleted invites with the following GUIDS:\n ${matches.map(k => k.name).join('\n')}`)
+    }
+  } catch (error) {
+    ctx.reply(`Error processing delete: ${error}`)
+  }
 })
 
 bot.launch()
