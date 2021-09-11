@@ -1,5 +1,8 @@
 runtime: nodejs16
 
+manual_scaling:
+  instances: 1
+
 env_variables:
   TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
   TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
