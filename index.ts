@@ -155,7 +155,12 @@ function helpMessage() {
 
 Commands:
 *  /invite  <guest name>  <# of entries>
+     alias: /i
+
 *  /active_invites
+     alias: /a /active
+
+*  /delete <regex>
   
 
 Endpoints:
@@ -261,11 +266,18 @@ app.post('/knock', async function (_req, res) {
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
 
-bot.command('/active_invites', async (ctx) => {
-  ctx.reply(activeInvitesMessage(await getActiveInvites()))
-})
+bot.command('active_invites', async (ctx) => await doGetActiveInvites(ctx));
+bot.command('active', async (ctx) => await doGetActiveInvites(ctx));
+bot.command('a', async (ctx) => await doGetActiveInvites(ctx));
 
-bot.command('invite', async (ctx) => {
+async function doGetActiveInvites(ctx: any) { // TODO: What is the right type here (and below)?
+  ctx.reply(activeInvitesMessage(await getActiveInvites()));
+}
+
+bot.command('invite', async (ctx) => await doInviteCmd(ctx));
+bot.command('i', async (ctx) => await doInviteCmd(ctx));
+
+async function doInviteCmd(ctx: any) {
   try {
     let [guestName, maxEntries] = ctx.update.message.text.split(' ').slice(1)
     const maxEntriesInt = parseInt(maxEntries)
@@ -274,7 +286,7 @@ bot.command('invite', async (ctx) => {
   } catch (error) {
     ctx.reply(`Error processing invite: ${error}`)
   }
-})
+}
 
 bot.command('help', async (ctx) => {
   ctx.reply(helpMessage())
