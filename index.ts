@@ -267,8 +267,8 @@ app.get('/knock', function (_req, res) {
 app.post('/knock', async function (_req, res) {
   const maybeInvite = await createInvite(1, 'Anonymous Knocker');
   if (!maybeInvite) {
-    res.send('Unable to knock');
     sendTelegram('Unable to create invite for knock.');
+    res.send('Unable to knock');
     return;
   }
   const { token } = maybeInvite;
