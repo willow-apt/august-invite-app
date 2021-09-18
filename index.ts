@@ -2,7 +2,7 @@
 
 import august from 'august-connect'
 import express from 'express'
-import { v4 as uuidv4,  validate as uuidValidate } from 'uuid'
+import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import https from 'https'
 import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
@@ -49,6 +49,11 @@ async function createInvite(maxEntries: number, guestName: string, expiration: D
   if (expiration === undefined) {
     expiration = new Date()
     expiration = moment(expiration).add(30, 'hours').toDate()
+  }
+
+  if (Number.isNaN(maxEntries) || maxEntries < 1) {
+    console.error(`maxEntries cannot be ${maxEntries}`);
+    return undefined;
   }
 
   const invite = { expiration, maxEntries, guestName }
@@ -132,16 +137,15 @@ function activeInvitesMessage(invites: any[]) { // FIX MY TYPE
   }
 
   return `The active invites are:
-${
-invites.map(invite => {
-  return `${invite.guestName}
+${invites.map(invite => {
+    return `${invite.guestName}
 --------------------
 GUID: ${invite[datastore.KEY].name.substring(0, 5)}
 Remaining Entries: ${invite.maxEntries}
 Expiration: ${formatDate(invite.expiration)}
 `
-}).join('\n')
-}
+  }).join('\n')
+    }
 `
 }
 
@@ -261,7 +265,13 @@ app.get('/knock', function (_req, res) {
 })
 
 app.post('/knock', async function (_req, res) {
-  const { token } = await createInvite(1, 'Anonymous Knocker')
+  const maybeInvite = await createInvite(1, 'Anonymous Knocker');
+  if (!maybeInvite) {
+    res.send('Unable to knock');
+    sendTelegram('Unable to create invite for knock.');
+    return;
+  }
+  const { token } = maybeInvite;
   sendTelegram(knockMessage(token))
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
@@ -280,11 +290,21 @@ bot.command('i', async (ctx) => await doInviteCmd(ctx));
 async function doInviteCmd(ctx: any) {
   try {
     let [guestName, maxEntries] = ctx.update.message.text.split(' ').slice(1)
-    const maxEntriesInt = parseInt(maxEntries)
-    const { token, invite } = await createInvite(maxEntriesInt, guestName)
+    if (guestName === undefined || guestName === '') {
+      ctx.reply('Usage: /invite <guestName> [maxEntries(default=1)]');
+      return;
+    }
+    const maxEntriesInt = parseInt(maxEntries) || 1;
+    const maybeInvite = await createInvite(maxEntriesInt, guestName);
+    if (!maybeInvite) {
+      ctx.reply("Failure to create invite.");
+      return;
+    }
+
+    const { token, invite } = maybeInvite;
     ctx.reply(inviteMessage(token, invite))
   } catch (error) {
-    ctx.reply(`Error processing invite: ${error}`)
+      ctx.reply(`Error processing invite: ${error}`)
   }
 }
 
