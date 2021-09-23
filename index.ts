@@ -31,9 +31,30 @@ const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
 const datastore = new Datastore()
 const app = express()
 
+
 app.use('/static', express.static('public'))
 
-app.get('/robots.txt', function (req, res) {
+async function setBarnDoorStatus(value: boolean) {
+  const key = datastore.key(['Barn', 'door'])
+  await datastore.save({ key, data: value })
+  barnDoorProtocolActivated = value
+}
+
+async function getBarnDoorStatus() {
+  return (await datastore.get(datastore.key(['Barn', 'door'])))[0]
+}
+
+let barnDoorProtocolActivated = false
+getBarnDoorStatus().then(res => barnDoorProtocolActivated = res)
+app.use(function (_req, res, next) {
+  if (barnDoorProtocolActivated) {
+    res.sendStatus(418);
+  } else {
+    next()
+  }
+})
+
+app.get('/robots.txt', function (_req, res) {
   res.type('text/plain');
   res.send("User-agent: *\nDisallow: /");
 });
@@ -276,16 +297,17 @@ app.post('/knock', async function (_req, res) {
   res.send("<p>You've knocked. Please wait to be let in.</p>")
 })
 
-bot.command('active_invites', async (ctx) => await doGetActiveInvites(ctx));
-bot.command('active', async (ctx) => await doGetActiveInvites(ctx));
-bot.command('a', async (ctx) => await doGetActiveInvites(ctx));
+for (const active_invites_alias of ['active_invites', 'active', 'a']) {
+  bot.command(active_invites_alias, doGetActiveInvites);
+}
 
 async function doGetActiveInvites(ctx: any) { // TODO: What is the right type here (and below)?
   ctx.reply(activeInvitesMessage(await getActiveInvites()));
 }
 
-bot.command('invite', async (ctx) => await doInviteCmd(ctx));
-bot.command('i', async (ctx) => await doInviteCmd(ctx));
+for (const invite_alias of ['invite', 'i']) {
+  bot.command(invite_alias, doInviteCmd);
+}
 
 async function doInviteCmd(ctx: any) {
   try {
@@ -328,6 +350,16 @@ bot.command('delete', async (ctx) => {
   } catch (error) {
     ctx.reply(`Error processing delete: ${error}`)
   }
+})
+
+bot.command('barndoor', async (ctx) => {
+  await setBarnDoorStatus(true);
+  ctx.reply('Barn door protocol activated.')
+})
+
+bot.command('openup', async (ctx) => {
+  await setBarnDoorStatus(false);
+  ctx.reply('Barn door protocol deactivated. Welcome to the world.')
 })
 
 bot.launch()
