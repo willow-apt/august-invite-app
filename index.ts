@@ -186,6 +186,10 @@ Commands:
      alias: /a /active
 
 *  /delete <regex>
+
+*  /barndoor
+
+*  /openup
   
 
 Endpoints:
