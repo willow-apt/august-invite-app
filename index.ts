@@ -54,6 +54,11 @@ app.use(function (_req, res, next) {
   }
 })
 
+// Warmup endpoint for GCP App Engine
+app.get('/_ah/warmup', function (_req, res) {
+  res.sendStatus(200);
+})
+
 app.get('/robots.txt', function (_req, res) {
   res.type('text/plain');
   res.send("User-agent: *\nDisallow: /");
