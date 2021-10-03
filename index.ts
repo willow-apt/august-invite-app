@@ -157,21 +157,22 @@ async function getActiveInvites() {
   return results.filter(invite => invite.expiration > now)
 }
 
-function activeInvitesMessage(invites: any[]) { // FIX MY TYPE
-  if (invites.length == 0) {
-    return 'No active invites. Get more friends!'
-  }
-
-  return `The active invites are:
-${invites.map(invite => {
+function inviteDescription(invite: any): string {
     return `${invite.guestName}
 --------------------
 GUID: ${invite[datastore.KEY].name.substring(0, 5)}
 Remaining Entries: ${invite.maxEntries}
 Expiration: ${formatDate(invite.expiration)}
 `
-  }).join('\n')
-    }
+}
+
+function activeInvitesMessage(invites: any[]) { // FIX MY TYPE
+  if (invites.length == 0) {
+    return 'No active invites. Get more friends!'
+  }
+
+  return `The active invites are:
+${invites.map(inviteDescription).join('\n')}
 `
 }
 
@@ -182,6 +183,8 @@ function formatDate(date: Date): string {
 function helpMessage() {
   return `
 == Willow Bot ==
+
+Barn Door Activated: ${barnDoorProtocolActivated}
 
 Commands:
 *  /invite  <guest name>  <# of entries>
@@ -339,9 +342,7 @@ async function doInviteCmd(ctx: any) {
   }
 }
 
-bot.command('help', async (ctx) => {
-  ctx.reply(helpMessage())
-})
+bot.help(async ctx => ctx.reply(helpMessage()))
 
 bot.command('delete', async (ctx) => {
   try {
