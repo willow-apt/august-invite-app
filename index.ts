@@ -40,6 +40,7 @@ function expired(d: Date) { return d < new Date() }
 app.use('/static', express.static('public'))
 app.use('/secretknock', function (req, res, next) {
   const ip = req.headers['x-appengine-user-ip']
+  console.log(`Secret knock request from ${ip}`)
   if (ip == TRUSTED_IP) {
     next()
   } else {
