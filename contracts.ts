@@ -6,5 +6,10 @@ export interface Invite {
     guestName: string;
 }
 
+export interface SecretKnock {
+  pattern: string;
+  expiration: Date;
+}
+
 export interface InviteEntity {
 }

@@ -6,7 +6,7 @@ import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import https from 'https'
 import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
-import { Invite } from './contracts'
+import { Invite, SecretKnock } from './contracts'
 import moment from 'moment-timezone'
 
 
@@ -27,12 +27,34 @@ const PORT = process.env.PORT || 3000
 const PROTOCOL = process.env.PROTOCOL || 'http'
 const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `${PROTOCOL}://${DOMAIN}`
 
+const TRUSTED_IP = process.env.TRUSTED_IP || '::1'
+
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
 const datastore = new Datastore()
 const app = express()
 
 
+function unlockDoor() { august.unlock({ lockID: LOCK_ID }) }
+function expired(d: Date) { return d < new Date() }
+
 app.use('/static', express.static('public'))
+app.use('/secretknock', function (req, res, next) {
+  const forwarded_for: string | string[] | undefined = req.headers['X-Forwarded-For']
+  let ip
+  if (forwarded_for === undefined) {
+    ip = req.socket.remoteAddress
+  } else if (typeof forwarded_for === "string") {
+    ip = forwarded_for
+  } else {
+    ip = forwarded_for[0]
+  }
+  console.log(`Secret knock request from ${ip}`)
+  if (ip == TRUSTED_IP) {
+    next()
+  } else {
+    res.sendStatus(403)
+  }
+})
 
 async function setBarnDoorStatus(value: boolean) {
   const key = datastore.key(['Barn', 'door'])
@@ -64,6 +86,12 @@ app.get('/robots.txt', function (_req, res) {
   res.send("User-agent: *\nDisallow: /");
 });
 
+function defaultExpirationDate() {
+  let expiration = new Date()
+  expiration = moment(expiration).add(30, 'hours').toDate()
+  return expiration
+}
+
 async function saveInvite(inviteToken: string, invite: Invite) {
   const key = datastore.key(['Invite', inviteToken])
   await datastore.save({ key, data: invite })
@@ -73,8 +101,7 @@ async function createInvite(maxEntries: number, guestName: string, expiration: D
   const token = uuidv4()
 
   if (expiration === undefined) {
-    expiration = new Date()
-    expiration = moment(expiration).add(30, 'hours').toDate()
+    expiration = defaultExpirationDate()
   }
 
   if (Number.isNaN(maxEntries) || maxEntries < 1) {
@@ -90,6 +117,22 @@ async function createInvite(maxEntries: number, guestName: string, expiration: D
 async function getInvite(inviteToken: string) {
   const entities = await datastore.get(datastore.key(['Invite', inviteToken]))
   return entities[0]
+}
+
+async function createSecretKnock(): Promise<SecretKnock> {
+  const oneToFive = () => Math.floor(Math.random() * 5 + 1)
+  const pattern = [oneToFive(), oneToFive(), oneToFive()].join('')
+  const expiration = defaultExpirationDate()
+
+  const key = datastore.key(['SecretKnock', 'knock'])
+  const knock: SecretKnock = { pattern, expiration }
+  await datastore.save({ key, data: knock })
+
+  return knock
+}
+
+async function getSecretKnock(): Promise<SecretKnock | undefined> {
+  return (await datastore.get(datastore.key(['SecretKnock', 'knock'])))[0]
 }
 
 function sendTelegram(message: string) {
@@ -267,7 +310,7 @@ app.post('/welcome/:inviteToken', async function (req, res) {
     return
   }
 
-  if (invite.expiration < new Date()) {
+  if (expired(invite.expiration)) {
     res.send('expired')
     return
   }
@@ -278,7 +321,7 @@ app.post('/welcome/:inviteToken', async function (req, res) {
 
   await recordEntry(inviteToken, invite)
   sendTelegram(entryMessage(invite))
-  august.unlock({ lockID: LOCK_ID })
+  unlockDoor()
   res.send(`Welcome!`)
 })
 
@@ -370,6 +413,22 @@ bot.command('barndoor', async (ctx) => {
 bot.command('openup', async (ctx) => {
   await setBarnDoorStatus(false);
   ctx.reply('Barn door protocol deactivated. Welcome to the world.')
+})
+
+bot.command('secretknock', async (ctx) => {
+  const knock: SecretKnock = await createSecretKnock()
+  ctx.reply(`The secret knock is ${knock.pattern}`)
+})
+
+app.post('/secretknock/:pattern', async function (req, res) {
+  const pattern = req.params.pattern
+  const knock: SecretKnock | undefined = await getSecretKnock()
+  if (knock && knock.pattern == pattern && !expired(knock.expiration)) {
+    unlockDoor()
+    sendTelegram('Someone has entered using the secret knock!')
+    res.sendStatus(200)
+  }
+  res.sendStatus(403)
 })
 
 bot.launch()
