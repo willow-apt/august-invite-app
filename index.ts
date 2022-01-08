@@ -36,12 +36,12 @@ app.use('/static', express.static('public'))
 
 async function setBarnDoorStatus(value: boolean) {
   const key = datastore.key(['Barn', 'door'])
-  await datastore.save({ key, data: value })
+  await datastore.save({ key, data: { value: value } })
   barnDoorProtocolActivated = value
 }
 
 async function getBarnDoorStatus() {
-  return (await datastore.get(datastore.key(['Barn', 'door'])))[0]
+  return (await datastore.get(datastore.key(['Barn', 'door'])))[0].value
 }
 
 let barnDoorProtocolActivated = false
