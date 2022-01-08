@@ -412,7 +412,7 @@ bot.command('secretknock', async (ctx) => {
   ctx.reply(`The secret knock is ${knock.pattern}`)
 })
 
-app.post('/secretknock/:pattern', async function (req, res) {
+app.get('/secretknock/:pattern', async function (req, res) {
   const pattern = req.params.pattern
   const knock: SecretKnock | undefined = await getSecretKnock()
   if (knock && knock.pattern == pattern && !expired(knock.expiration)) {
