@@ -39,16 +39,7 @@ function expired(d: Date) { return d < new Date() }
 
 app.use('/static', express.static('public'))
 app.use('/secretknock', function (req, res, next) {
-  const forwarded_for: string | string[] | undefined = req.headers['X-Forwarded-For']
-  let ip
-  if (forwarded_for === undefined) {
-    ip = req.socket.remoteAddress
-  } else if (typeof forwarded_for === "string") {
-    ip = forwarded_for
-  } else {
-    ip = forwarded_for[0]
-  }
-  console.log(`Secret knock request from ${ip}`)
+  const ip = req.headers['x-appengine-user-ip']
   if (ip == TRUSTED_IP) {
     next()
   } else {
