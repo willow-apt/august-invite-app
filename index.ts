@@ -419,6 +419,7 @@ app.post('/secretknock/:pattern', async function (req, res) {
     unlockDoor()
     sendTelegram('Someone has entered using the secret knock!')
     res.sendStatus(200)
+    return
   }
   res.sendStatus(403)
 })
