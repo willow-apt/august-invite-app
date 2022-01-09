@@ -8,14 +8,16 @@ import { Datastore } from '@google-cloud/datastore'
 import { Telegraf } from 'telegraf'
 import { Invite, SecretKnock } from './contracts'
 import moment from 'moment-timezone'
+import bodyParser from 'body-parser'
+import { sha256 } from 'js-sha256'
 
 
 require('dotenv').config();
 
 const LOCK_ID = process.env.LOCK_ID
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
+const TELEGRAM_BOT_TOKEN = '1765167552:AAFn_Ol_VKIgqxBNyy8hKrQkrCfczjb_Kco' //process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = '-1001301380171' //process.env.TELEGRAM_CHAT_ID
 
 if (TELEGRAM_BOT_TOKEN === undefined || TELEGRAM_CHAT_ID === undefined) {
   console.error(`Missing telegram secrets. Exiting.`);
@@ -27,6 +29,7 @@ const PORT = process.env.PORT || 3000
 const PROTOCOL = process.env.PROTOCOL || 'http'
 const BASE_PATH = DOMAIN === 'localhost' ? `${PROTOCOL}://localhost:${PORT}` : `${PROTOCOL}://${DOMAIN}`
 
+
 const TRUSTED_IP = process.env.TRUSTED_IP || '::1'
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN)
@@ -36,6 +39,9 @@ const app = express()
 
 function unlockDoor() { august.unlock({ lockID: LOCK_ID }) }
 function expired(d: Date) { return d < new Date() }
+
+// Parse body as plain text
+app.use(bodyParser.text());
 
 app.use('/static', express.static('public'))
 app.use('/secretknock', function (req, res, next) {
@@ -424,14 +430,65 @@ app.get('/secretknock/:pattern', async function (req, res) {
   res.sendStatus(403)
 })
 
-app.post('/applewatch', async function (req, res) {
-  sendTelegram(`Apple Watch with msg:  ${req.body}`);
-  res.sendStatus(200);
-  return;
+async function getListOfTrustedKnockers() {
+  const query = datastore.createQuery('TrustedKnocker').select('__key__')
+  const allKeys = (await datastore.runQuery(query))[0].map(res => res[datastore.KEY].name)
+  return allKeys;
+}
+
+app.post('/trustedknock', async function (req, res) {
+  const nonce = req.body
+  if (!nonce || nonce === '') {
+    res.sendStatus(401);
+    return;
+  }
+  const nonceSplit = nonce.split('_')
+  if (nonceSplit.length !== 2) {
+    res.sendStatus(401);
+    return;
+  }
+  const timestamp = Number.parseInt(nonceSplit[0]);
+  if (timestamp === undefined) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const providedHash = req.get('Authorization')
+  if (!providedHash || providedHash === '') {
+    res.sendStatus(401);
+    return;
+  }
+
+  // The nonce encodes a unix timestamp.
+  // Don't accept requests that deviate a minute from current system time.
+  const nonceTime = new Date(timestamp * 1000)
+  const currentTime = new Date()
+  var diff = Math.abs(nonceTime.getTime() - currentTime.getTime())
+  // sendTelegram(`${nonceTime} - ${currentTime} === ${diff}`)
+  
+  if (diff > 60000) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const trustedKnockers = await getListOfTrustedKnockers();
+
+  trustedKnockers.forEach(secret => {
+    const computedHash = sha256.hmac(secret, nonce);
+    // sendTelegram(`${secret} + ${nonce} = ${computedHash} ?= ${providedHash}`)
+    if (computedHash === providedHash) {
+      sendTelegram("[!] Trusted Knocker has entered.");
+      unlockDoor();
+      res.sendStatus(200);
+      return;
+    }
+  });
+
+  res.sendStatus(401);
 });
 
-bot.launch()
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+// bot.launch()
+// process.once('SIGINT', () => bot.stop('SIGINT'))
+// process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 app.listen(PORT)
