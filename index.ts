@@ -437,7 +437,7 @@ async function getListOfTrustedKnockers() {
 }
 
 app.post('/trustedknock', async function (req, res) {
-  sendTelegram('(trusted knock initiated...)')
+  sendTelegram('trusted knock initiated...')
   const nonce = req.body
   if (!nonce || nonce === '') {
     res.sendStatus(401);
@@ -474,18 +474,20 @@ app.post('/trustedknock', async function (req, res) {
 
   const trustedKnockers = await getListOfTrustedKnockers();
 
-  trustedKnockers.forEach(secret => {
+  const validKnock = trustedKnockers.some(secret => {
     const computedHash = sha256.hmac(secret, nonce);
     // sendTelegram(`${secret} + ${nonce} = ${computedHash} ?= ${providedHash}`)
-    if (computedHash === providedHash) {
-      sendTelegram('Trusted Knocker has entered.')
-      unlockDoor()
-      res.sendStatus(200)
-      return;
-    }
+    return computedHash === providedHash;
   });
 
-  sendTelegram('[!] Failed /trustedknock')
+  if (validKnock) {
+    sendTelegram('Trusted Knocker has entered.')
+    unlockDoor()
+    res.sendStatus(200)
+    return;
+  }
+
+  sendTelegram('trusted knock attempt has failed.')
   res.sendStatus(401);
 });
 
