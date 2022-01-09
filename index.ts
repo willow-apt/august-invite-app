@@ -16,8 +16,8 @@ require('dotenv').config();
 
 const LOCK_ID = process.env.LOCK_ID
 
-const TELEGRAM_BOT_TOKEN = '1765167552:AAFn_Ol_VKIgqxBNyy8hKrQkrCfczjb_Kco' //process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_CHAT_ID = '-1001301380171' //process.env.TELEGRAM_CHAT_ID
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
 if (TELEGRAM_BOT_TOKEN === undefined || TELEGRAM_CHAT_ID === undefined) {
   console.error(`Missing telegram secrets. Exiting.`);
