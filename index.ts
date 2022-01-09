@@ -424,6 +424,12 @@ app.get('/secretknock/:pattern', async function (req, res) {
   res.sendStatus(403)
 })
 
+app.post('/applewatch', async function (req, res) {
+  sendTelegram(`Apple Watch with msg:  ${req.body}`);
+  res.sendStatus(200);
+  return;
+});
+
 bot.launch()
 process.once('SIGINT', () => bot.stop('SIGINT'))
 process.once('SIGTERM', () => bot.stop('SIGTERM'))
