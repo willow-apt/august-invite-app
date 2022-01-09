@@ -449,10 +449,9 @@ app.get("/secretknock/:pattern", async function (req, res) {
 });
 
 async function getListOfTrustedKnockers() {
-  const query = datastore.createQuery("TrustedKnocker").select("__key__");
-  // Tuple: (secret, user's name)
+  const query = datastore.createQuery("TrustedKnocker");
   return (await datastore.runQuery(query))[0].map((res) => {
-    return { secret: res[datastore.KEY].name, user: res.user ?? "unknown" };
+    return { secret: res[datastore.KEY].name, user: res.User ?? "unknown" };
   });
 }
 
@@ -463,6 +462,7 @@ app.post("/trustedknock", async function (req, res) {
     res.sendStatus(401);
     return;
   }
+
   const nonceSplit = nonce.split("_");
   if (nonceSplit.length !== 2) {
     res.sendStatus(401);
@@ -487,7 +487,7 @@ app.post("/trustedknock", async function (req, res) {
   var diff = Math.abs(nonceTime.getTime() - currentTime.getTime());
   // sendTelegram(`${nonceTime} - ${currentTime} === ${diff}`)
 
-  if (diff > 60000) {
+  if (diff > 300000) {
     res.sendStatus(401);
     return;
   }
