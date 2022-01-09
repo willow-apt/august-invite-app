@@ -297,23 +297,23 @@ app.post('/welcome/:inviteToken', async function (req, res) {
   const inviteToken = req.params.inviteToken
 
   if (!uuidValidate(inviteToken)) {
-    res.send("no thank you")
+    res.sendStatus(401)
     return
   }
 
   const invite = await getInvite(inviteToken)
 
   if (!invite) {
-    res.send('no')
+    res.sendStatus(401)
     return
   }
 
   if (expired(invite.expiration)) {
-    res.send('expired')
+    res.sendStatus(401)
     return
   }
   if (invite.maxEntries == 0) {
-    res.send('used up all entries')
+    res.sendStatus(401)
     return
   }
 
@@ -437,6 +437,7 @@ async function getListOfTrustedKnockers() {
 }
 
 app.post('/trustedknock', async function (req, res) {
+  sendTelegram('(trusted knock initiated...)')
   const nonce = req.body
   if (!nonce || nonce === '') {
     res.sendStatus(401);
@@ -477,13 +478,14 @@ app.post('/trustedknock', async function (req, res) {
     const computedHash = sha256.hmac(secret, nonce);
     // sendTelegram(`${secret} + ${nonce} = ${computedHash} ?= ${providedHash}`)
     if (computedHash === providedHash) {
-      sendTelegram("[!] Trusted Knocker has entered.");
-      unlockDoor();
-      res.sendStatus(200);
+      sendTelegram('Trusted Knocker has entered.')
+      unlockDoor()
+      res.sendStatus(200)
       return;
     }
   });
 
+  sendTelegram('[!] Failed /trustedknock')
   res.sendStatus(401);
 });
 
