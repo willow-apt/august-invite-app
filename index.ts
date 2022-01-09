@@ -487,8 +487,8 @@ app.post('/trustedknock', async function (req, res) {
   res.sendStatus(401);
 });
 
-// bot.launch()
-// process.once('SIGINT', () => bot.stop('SIGINT'))
-// process.once('SIGTERM', () => bot.stop('SIGTERM'))
+bot.launch()
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 app.listen(PORT)
